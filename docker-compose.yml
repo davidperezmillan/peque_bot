@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  peque_bot:
+    build: .
+    container_name: ${CONTAINER_NAME}
+    env_file:
+      - .env
+    volumes:
+      - ./videos:/app/videos
+    restart: unless-stopped
