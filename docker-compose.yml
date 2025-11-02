@@ -2,8 +2,27 @@ services:
   peque_bot:
     build: .
     container_name: ${CONTAINER_NAME}
-    env_file:
-      - .env
+    environment:
+      # Container Configuration
+      - CONTAINER_NAME=${CONTAINER_NAME}
+      - LOG_LEVEL=${LOG_LEVEL}
+
+      # Telegram API Configuration
+      - API_ID=${API_ID}
+      - API_HASH=${API_HASH}
+      - BOT_TOKEN=${BOT_TOKEN}
+
+      # Chat Configuration
+      - VIDEO_INPUT_GROUP_ID=${VIDEO_INPUT_GROUP_ID}
+      - DESTINATION_CHAT_ID=${DESTINATION_CHAT_ID}
+
+      # Video Size Limits (in MB)
+      - SHORT_VIDEO_MAX_MB=${SHORT_VIDEO_MAX_MB}
+      - MEDIUM_VIDEO_MAX_MB=${MEDIUM_VIDEO_MAX_MB}
+      - LONG_VIDEO_MIN_MB=${LONG_VIDEO_MIN_MB}
+
+      # Storage Configuration
+      - VIDEOS_DIR=${VIDEOS_DIR}
     volumes:
       - ${VIDEOS_DIR}:/app/videos
       - ./logs:/app/logs
