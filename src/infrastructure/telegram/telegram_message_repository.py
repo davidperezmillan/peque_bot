@@ -24,7 +24,7 @@ class TelegramMessageRepository(MessageRepository):
                             chat_id=message.chat_id,
                             video_duration=video_attr.duration,
                             video_size=message.document.size,
-                            file_id=message.document.id,
+                            document=message.document,
                             caption=message.text
                         )
                         messages.append(video_message)
@@ -38,10 +38,11 @@ class TelegramMessageRepository(MessageRepository):
     async def forward_message(self, message: VideoMessage, destination_chat_id: str) -> None:
         self.logger.debug(f"Forwarding message {message.message_id} from chat {message.chat_id} to {destination_chat_id}")
         try:
-            await self.client.forward_messages(destination_chat_id, message.message_id, message.chat_id)
-            self.logger.info(f"Message {message.message_id} forwarded successfully to {destination_chat_id}")
+            # Enviar el archivo sin caption en lugar de reenviar
+            await self.client.send_message(destination_chat_id, file=message.document)
+            self.logger.info(f"Message {message.message_id} sent successfully to {destination_chat_id} without caption")
         except Exception as e:
-            self.logger.error(f"Failed to forward message {message.message_id} to {destination_chat_id}: {str(e)}", exc_info=True)
+            self.logger.error(f"Failed to send message {message.message_id} to {destination_chat_id}: {str(e)}", exc_info=True)
             raise
 
     async def send_message_with_buttons(self, message: VideoMessage, destination_chat_id: str) -> None:
@@ -50,7 +51,7 @@ class TelegramMessageRepository(MessageRepository):
             buttons = [
                 [Button.inline('Enviar', 'send'), Button.inline('Borrar', 'delete')]
             ]
-            await self.client.send_message(destination_chat_id, message.caption or 'Video medio', buttons=buttons, file=message.file_id)
+            await self.client.send_message(destination_chat_id, message.caption or 'Video medio', buttons=buttons, file=message.document)
             self.logger.info(f"Message with buttons sent successfully for video {message.message_id} to {destination_chat_id}")
         except Exception as e:
             self.logger.error(f"Failed to send message with buttons for video {message.message_id} to {destination_chat_id}: {str(e)}", exc_info=True)
@@ -65,11 +66,29 @@ class TelegramMessageRepository(MessageRepository):
             self.logger.error(f"Failed to delete message {message.message_id} from chat {message.chat_id}: {str(e)}", exc_info=True)
             raise
 
-    async def send_message(self, chat_id: int, text: str) -> None:
-        self.logger.debug(f"Sending text message to chat {chat_id}")
+    async def send_message(self, chat_id: int, text: str, file=None) -> None:
+        self.logger.debug(f"Sending message to chat {chat_id}")
         try:
-            await self.client.send_message(chat_id, text)
-            self.logger.debug(f"Text message sent successfully to chat {chat_id}")
+            await self.client.send_message(chat_id, text, file=file)
+            self.logger.debug(f"Message sent successfully to chat {chat_id}")
         except Exception as e:
-            self.logger.error(f"Failed to send text message to chat {chat_id}: {str(e)}", exc_info=True)
+            self.logger.error(f"Failed to send message to chat {chat_id}: {str(e)}", exc_info=True)
+            raise
+
+    async def send_reply(self, chat_id: int, text: str, reply_to_message_id: int) -> None:
+        self.logger.debug(f"Sending reply to message {reply_to_message_id} in chat {chat_id}")
+        try:
+            await self.client.send_message(chat_id, text, reply_to=reply_to_message_id)
+            self.logger.debug(f"Reply sent successfully to chat {chat_id}")
+        except Exception as e:
+            self.logger.error(f"Failed to send reply to chat {chat_id}: {str(e)}", exc_info=True)
+            raise
+
+    async def edit_message_caption(self, message: VideoMessage, new_caption: str) -> None:
+        self.logger.debug(f"Editing caption of message {message.message_id} in chat {message.chat_id}")
+        try:
+            await self.client.edit_message(message.chat_id, message.message_id, text=new_caption)
+            self.logger.info(f"Caption of message {message.message_id} edited successfully")
+        except Exception as e:
+            self.logger.error(f"Failed to edit caption of message {message.message_id}: {str(e)}", exc_info=True)
             raise

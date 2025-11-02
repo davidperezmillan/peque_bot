@@ -87,13 +87,13 @@ peque_bot/
 - `chat_id`: ID del chat donde se recibió (int)
 - `video_duration`: Duración en segundos (int)
 - `video_size`: Tamaño en bytes (int)
-- `file_id`: ID del archivo en Telegram (str)
+- `document`: Objeto documento de Telegram (Document)
 - `caption`: Texto del mensaje (Optional[str])
 
 **Propiedades calculadas**:
-- `is_short_video`: True si duración < 20 segundos
-- `is_medium_video`: True si 20 ≤ duración < 1000 segundos
-- `is_long_video`: True si duración ≥ 1000 segundos
+- `is_short_video`: True si tamaño < 50 MB
+- `is_medium_video`: True si 50 MB ≤ tamaño < 500 MB
+- `is_long_video`: True si tamaño ≥ 500 MB
 
 #### 3.2 Interfaces de Repositorios
 
@@ -131,7 +131,7 @@ peque_bot/
 
 **Métodos**:
 - `__init__()`: Inicializa con casos de uso para cada tipo de video
-- `handle_video_message()`: Clasifica y enruta videos según duración
+- `handle_video_message()`: Clasifica y enruta videos según tamaño
 
 **Lógica de enrutamiento**:
 ```python

@@ -13,7 +13,10 @@ class Config:
 
     VIDEO_INPUT_GROUP_ID = os.getenv('VIDEO_INPUT_GROUP_ID')
     DESTINATION_CHAT_ID = os.getenv('DESTINATION_CHAT_ID')
-    VIDEOS_DIR = os.getenv('VIDEOS_DIR', 'videos')
+
+    # Video size limits in MB (converted to bytes internally)
+    SHORT_VIDEO_MAX_BYTES = int(os.getenv('SHORT_VIDEO_MAX_MB', '50')) * (1024 * 1024)
+    MEDIUM_VIDEO_MAX_BYTES = int(os.getenv('MEDIUM_VIDEO_MAX_MB', '500')) * (1024 * 1024)
 
     @staticmethod
     def check_video_group_ids(video_group_id: str) -> int:
@@ -37,8 +40,10 @@ class Config:
         logger.info(f"Log Level: {os.getenv('LOG_LEVEL', 'INFO')}")
         logger.info(f"Video Input Group ID: {Config.VIDEO_INPUT_GROUP_ID}")
         logger.info(f"Destination Chat ID: {Config.DESTINATION_CHAT_ID}")
-        logger.info(f"Videos Directory: {Config.VIDEOS_DIR}")
         logger.info(f"Bot Token: {'*' * len(Config.BOT_TOKEN) if Config.BOT_TOKEN else 'Not Set'}")
+        logger.info("=== Video Size Limits ===")
+        logger.info(f"Short Video Max: {Config.SHORT_VIDEO_MAX_BYTES // (1024*1024)} MB ({Config.SHORT_VIDEO_MAX_BYTES} bytes)")
+        logger.info(f"Medium Video Max: {Config.MEDIUM_VIDEO_MAX_BYTES // (1024*1024)} MB ({Config.MEDIUM_VIDEO_MAX_BYTES} bytes)")
         logger.info("==========================")
 
     @staticmethod

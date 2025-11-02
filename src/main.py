@@ -27,6 +27,11 @@ async def main():
 
     # Helper function to safely convert chat ID to int
     def safe_chat_id(chat_id_str):
+        ## check if chat_id_str is int or none or empty
+        if chat_id_str is None:
+            return None
+        if isinstance(chat_id_str, int):
+            return chat_id_str
         if chat_id_str and chat_id_str.strip():
             try:
                 return int(chat_id_str)
@@ -51,7 +56,7 @@ async def main():
     logger.debug("Initializing use cases")
     handle_short = HandleShortVideoUseCase(message_repo, Config.DESTINATION_CHAT_ID)
     handle_medium = HandleMediumVideoUseCase(message_repo, Config.DESTINATION_CHAT_ID)
-    handle_long = HandleLongVideoUseCase(message_repo, video_repo, Config.VIDEOS_DIR)
+    handle_long = HandleLongVideoUseCase(message_repo, video_repo)
     logger.info("Use cases initialized")
 
     # Initialize application service
@@ -76,14 +81,14 @@ async def main():
     @client.on(events.NewMessage(chats=[input_group_id]))
     async def handle_video_input_group(event):
         """Unified handler for all video messages from the input group.
-        Automatically classifies videos by duration and routes to appropriate use case."""
+        Automatically classifies videos by size and routes to appropriate use case."""
         message = event.message
         logger.info(f"Received message in video input group {input_group_id}")
 
         if message.video:
             video_attr = next((attr for attr in message.document.attributes if hasattr(attr, 'duration')), None)
             if video_attr:
-                logger.debug(f"Processing video: duration={video_attr.duration}s, size={message.document.size} bytes")
+                logger.debug(f"Processing video: size={message.document.size} bytes")
 
                 # Create video message entity
                 video_message = VideoMessage(
@@ -91,22 +96,22 @@ async def main():
                     chat_id=message.chat_id,
                     video_duration=video_attr.duration,
                     video_size=message.document.size,
-                    file_id=message.document.id,
+                    document=message.document,
                     caption=message.text
                 )
 
-                # Classify and route video based on duration
+                # Classify and route video based on size
                 if video_message.is_short_video:
-                    logger.info(f"Classified as SHORT video (<20s): routing to short video handler")
+                    logger.info(f"Classified as SHORT video (<50MB): routing to short video handler")
                     await handler_service.handle_video_message(video_message)
                 elif video_message.is_medium_video:
-                    logger.info(f"Classified as MEDIUM video (20-1000s): routing to medium video handler")
+                    logger.info(f"Classified as MEDIUM video (50-500MB): routing to medium video handler")
                     await handler_service.handle_video_message(video_message)
                 elif video_message.is_long_video:
-                    logger.info(f"Classified as LONG video (>1000s): routing to long video handler")
+                    logger.info(f"Classified as LONG video (>500MB): routing to long video handler")
                     await handler_service.handle_video_message(video_message)
                 else:
-                    logger.warning(f"Video duration {video_attr.duration}s doesn't match any category")
+                    logger.warning(f"Video size {message.document.size} bytes doesn't match any category")
             else:
                 logger.warning(f"Video message {message.id} without duration attribute")
         else:
@@ -142,9 +147,13 @@ async def main():
         if data == 'send':
             logger.info(f"User {event.sender_id} approved video sending")
             await event.answer('Video enviado!')
+            # enviar el video al chat de destino sin caption
+            msg = await event.get_message()
+            await client.send_message(Config.DESTINATION_CHAT_ID, file=msg.document)
         elif data == 'delete':
             logger.info(f"User {event.sender_id} requested video deletion")
-            await client.delete_messages(event.chat_id, event.message.id)
+            msg = await event.get_message()
+            await client.delete_messages(event.chat_id, msg.id)
             await event.answer('Video borrado!')
         else:
             logger.warning(f"Unknown callback data '{data}' from user {event.sender_id}")

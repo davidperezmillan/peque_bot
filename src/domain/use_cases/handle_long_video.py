@@ -4,10 +4,10 @@ from src.domain.repositories.video_repository import VideoRepository
 from src.config.config import Config
 
 class HandleLongVideoUseCase:
-    def __init__(self, message_repository: MessageRepository, video_repository: VideoRepository, videos_dir: str):
+    def __init__(self, message_repository: MessageRepository, video_repository: VideoRepository):
         self.message_repository = message_repository
         self.video_repository = video_repository
-        self.videos_dir = videos_dir
+        self.videos_dir = "/app/videos"
         self.logger = Config.get_logger('domain.use_cases.handle_long_video')
 
     async def execute(self, video_message: VideoMessage) -> None:
@@ -17,13 +17,18 @@ class HandleLongVideoUseCase:
             self.logger.info(f"Downloading long video message {video_message.message_id} "
                            f"from chat {video_message.chat_id} to directory {self.videos_dir}")
             try:
+                # enviamos una respuesta al mensaje original indicando descarga en progreso
+                downloading_text = "⬇️ Descargando archivo, por favor espera..."
+                await self.message_repository.send_reply(video_message.chat_id, downloading_text, video_message.message_id)
+                self.logger.info(f"Reply sent for video {video_message.message_id} with downloading status")
+
                 file_path = await self.video_repository.download_video(video_message, self.videos_dir)
                 self.logger.info(f"Long video message {video_message.message_id} downloaded successfully to {file_path}")
 
-                # Send confirmation message
-                confirmation_text = f"✅ Video largo descargado exitosamente:\n📁 {file_path}"
-                await self.message_repository.send_message(video_message.chat_id, confirmation_text)
-                self.logger.info(f"Confirmation message sent for long video {video_message.message_id}")
+                # Send confirmation reply
+                confirmation_text = f"✅ Archivo descargado exitosamente:\n📁 {file_path}"
+                await self.message_repository.send_reply(video_message.chat_id, confirmation_text, video_message.message_id)
+                self.logger.info(f"Confirmation reply sent for long video {video_message.message_id}")
 
             except Exception as e:
                 self.logger.error(f"Failed to process long video message {video_message.message_id}: {str(e)}", exc_info=True)
