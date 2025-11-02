@@ -58,3 +58,6 @@ videos/
 # Temporary files
 *.tmp
 *.temp
+
+# Tokens and secrets
+token_github
