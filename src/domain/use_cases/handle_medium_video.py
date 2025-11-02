@@ -13,10 +13,12 @@ class HandleMediumVideoUseCase:
 
         if video_message.is_medium_video:
             self.logger.info(f"Sending medium video message {video_message.message_id} "
-                           f"from chat {video_message.chat_id} to destination {self.destination_chat_id} with approval buttons")
+                           f"from chat {video_message.chat_id} to origin chat {video_message.chat_id} with approval buttons")
             try:
-                await self.message_repository.send_message_with_buttons(video_message, self.destination_chat_id)
+                await self.message_repository.send_message_with_buttons(video_message, video_message.chat_id)
                 self.logger.info(f"Medium video message {video_message.message_id} sent with buttons successfully")
+                # borrar el mensaje original
+                await self.message_repository.delete_message(video_message)
             except Exception as e:
                 self.logger.error(f"Failed to send medium video message {video_message.message_id} with buttons: {str(e)}", exc_info=True)
                 raise

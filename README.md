@@ -4,11 +4,11 @@ Un bot de Telegram construido con Telethon usando arquitectura hexagonal para ge
 
 ## Características
 
-1. **Entrada Unificada de Videos**: Todos los videos llegan a un solo grupo y son clasificados automáticamente por duración
+1. **Entrada Unificada de Videos**: Todos los videos llegan a un solo grupo y son clasificados automáticamente por tamaño
 2. **Clasificación Automática**:
-   - **Videos Cortos**: < 20 segundos - Reenvío automático al chat de destino
-   - **Videos Medianos**: 20-1000 segundos - Sistema interactivo de aprobación con botones enviar/borrar
-   - **Videos Largos**: > 1000 segundos - Descarga al sistema de archivos para almacenamiento
+   - **Videos Pequeños**: < límite configurado (por defecto 50 MB) - Reenvío automático al chat de destino
+   - **Videos Medianos**: entre límites configurados (por defecto 50-500 MB) - Sistema interactivo de aprobación con botones enviar/borrar
+   - **Videos Grandes**: > límite configurado (por defecto 500 MB) - Descarga al sistema de archivos para almacenamiento
 3. **Arquitectura Escalables**: Fácil agregar nuevas categorías de procesamiento de video
 
 ## Arquitectura
@@ -23,15 +23,15 @@ Este proyecto sigue la arquitectura hexagonal con:
 ```
 Grupo de Entrada (VIDEO_INPUT_GROUP_ID)
     ↓
-Llega video con metadatos de duración
+Llega video con metadatos de tamaño
     ↓
-Clasificación:
-├── Duración < 20s → Manejador de Videos Cortos
+Clasificación (límites configurables en MB):
+├── Tamaño < SHORT_VIDEO_MAX_MB → Manejador de Videos Pequeños
 │   └── Reenvío automático a DESTINATION_CHAT_ID
-├── 20s ≤ Duración < 1000s → Manejador de Videos Medios
+├── SHORT_VIDEO_MAX_MB ≤ Tamaño < MEDIUM_VIDEO_MAX_MB → Manejador de Videos Medios
 │   ├── Mostrar botones de aprobación (Enviar/Borrar)
 │   └── Requiere interacción del usuario
-└── Duración ≥ 1000s → Manejador de Videos Largos
+└── Tamaño ≥ LONG_VIDEO_MIN_MB → Manejador de Videos Grandes
     └── Descargar a VIDEOS_DIR
 ```
 
@@ -55,6 +55,9 @@ Para información detallada sobre la arquitectura, clases y funcionamiento inter
 - `VIDEO_INPUT_GROUP_ID`: ID del grupo donde se reciben todos los videos y se clasifican automáticamente
 - `DESTINATION_CHAT_ID`: Chat de destino para videos cortos reenviados y aprobaciones de videos medios
 - `VIDEOS_DIR`: Directorio para videos largos descargados
+- `SHORT_VIDEO_MAX_MB`: Límite máximo en MB para videos pequeños (por defecto: 50)
+- `MEDIUM_VIDEO_MAX_MB`: Límite máximo en MB para videos medianos (por defecto: 500)
+- `LONG_VIDEO_MIN_MB`: Límite mínimo en MB para videos largos (por defecto: 500)
 
 ## Flujo de la Aplicación
 
@@ -83,17 +86,17 @@ Extraer metadatos del video (duración, tamaño, file_id)
     ↓
 Crear entidad VideoMessage
     ↓
-Clasificar por duración:
-├── < 20 segundos → Flujo de Video Corto
+Clasificar por tamaño:
+├── < SHORT_VIDEO_MAX_MB → Flujo de Video Pequeño
 │   ├── HandleShortVideoUseCase.execute()
 │   ├── TelegramMessageRepository.send_message()
 │   └── Reenviar a DESTINATION_CHAT_ID
-├── 20-1000 segundos → Flujo de Video Medio
+├── SHORT_VIDEO_MAX_MB - MEDIUM_VIDEO_MAX_MB → Flujo de Video Medio
 │   ├── HandleMediumVideoUseCase.execute()
 │   ├── Enviar a DESTINATION_CHAT_ID con botones de aprobación
 │   ├── Esperar callback del usuario (Enviar/Borrar)
 │   └── Procesar decisión del usuario
-└── ≥ 1000 segundos → Flujo de Video Largo
+└── ≥ LONG_VIDEO_MIN_MB → Flujo de Video Grande
     ├── HandleLongVideoUseCase.execute()
     ├── FilesystemVideoRepository.download_video()
     └── Guardar en VIDEOS_DIR

@@ -9,8 +9,6 @@ class MessageRepository(ABC):
 
     @abstractmethod
     async def forward_message(self, message: VideoMessage, destination_chat_id: str) -> None:
-        ## reenvio del mensaje a otro chat
-        await self.client.send_message(destination_chat_id, message.caption, reply_to=message.message_id)
         pass
 
     @abstractmethod
@@ -19,4 +17,16 @@ class MessageRepository(ABC):
 
     @abstractmethod
     async def delete_message(self, message: VideoMessage) -> None:
+        pass
+
+    @abstractmethod
+    async def edit_message_caption(self, message: VideoMessage, new_caption: str) -> None:
+        pass
+
+    @abstractmethod
+    async def send_message(self, chat_id: int, text: str, file=None) -> None:
+        pass
+
+    @abstractmethod
+    async def send_reply(self, chat_id: int, text: str, reply_to_message_id: int) -> None:
         pass
