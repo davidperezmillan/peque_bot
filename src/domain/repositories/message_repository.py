@@ -12,7 +12,7 @@ class MessageRepository(ABC):
         pass
 
     @abstractmethod
-    async def send_message_with_buttons(self, message: VideoMessage, destination_chat_id: str) -> None:
+    async def send_message_with_buttons(self, message: VideoMessage, destination_chat_id: str, alert_text: str) -> None:
         pass
 
     @abstractmethod

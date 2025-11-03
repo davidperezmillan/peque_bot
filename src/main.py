@@ -157,6 +157,10 @@ async def main():
             # enviar el video al chat de destino sin caption
             msg = await event.get_message()
             await client.send_message(Config.DESTINATION_CHAT_ID, file=msg.document)
+            ## borrar el mensaje original
+            await client.delete_messages(event.chat_id, msg.id)
+            await event.answer('Video enviado al chat de destino!')
+
         elif data == 'delete':
             logger.info(f"User {event.sender_id} requested video deletion")
             msg = await event.get_message()
