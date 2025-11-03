@@ -10,6 +10,7 @@ class VideoMessage:
     video_size: int  # in bytes
     document: any  # Telegram document object
     caption: Optional[str] = None
+    file_name: Optional[str] = None  # Optional: Name of the file
 
     @property
     def is_short_video(self) -> bool:
