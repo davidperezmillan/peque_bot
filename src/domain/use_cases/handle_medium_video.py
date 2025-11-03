@@ -15,7 +15,7 @@ class HandleMediumVideoUseCase:
             self.logger.info(f"Sending medium video message {video_message.message_id} "
                            f"from chat {video_message.chat_id} to origin chat {video_message.chat_id} with approval buttons")
             try:
-                await self.message_repository.send_message_with_buttons(video_message, video_message.chat_id)
+                await self.message_repository.send_message_with_buttons(video_message, video_message.chat_id, "⚠️ Este video es de tamaño medio. ¿Deseas enviarlo al chat de destino?")
                 self.logger.info(f"Medium video message {video_message.message_id} sent with buttons successfully")
                 # borrar el mensaje original
                 await self.message_repository.delete_message(video_message)

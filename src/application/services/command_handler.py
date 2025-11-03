@@ -53,7 +53,7 @@ class CommandHandler:
             "/status - Ver estado del bot\n"
             "/stats - Ver estadísticas\n\n"
             "🎥 **Funcionalidades:**\n\n"
-            "• **Videos cortos**: Se procesan automáticamente\n"
+            "• **Videos cortos**: Requieren aprobación\n"
             "• **Videos medianos**: Requieren aprobación\n"
             "• **Videos largos**: Se descargan y almacenan\n\n"
             "Simplemente envía un video a los grupos correspondientes."

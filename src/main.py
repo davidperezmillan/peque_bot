@@ -2,6 +2,7 @@ import asyncio
 import logging
 from telethon import TelegramClient, events
 from telethon.tl.custom import Button
+from telethon.tl.types import DocumentAttributeFilename
 from src.config.config import Config
 from src.domain.entities.video_message import VideoMessage
 from src.infrastructure.telegram.telegram_message_repository import TelegramMessageRepository
@@ -90,6 +91,11 @@ async def main():
             if video_attr:
                 logger.debug(f"Processing video: size={message.document.size} bytes")
 
+                # Extraer el nombre del archivo del documento
+                file_name_attr = next((attr for attr in message.document.attributes if isinstance(attr, DocumentAttributeFilename)), None)
+                file_name = file_name_attr.file_name if file_name_attr else None
+
+
                 # Create video message entity
                 video_message = VideoMessage(
                     message_id=message.id,
@@ -97,7 +103,8 @@ async def main():
                     video_duration=video_attr.duration,
                     video_size=message.document.size,
                     document=message.document,
-                    caption=message.text
+                    caption=message.text,
+                    file_name=file_name # ← NUEVO: Extraer el nombre del archivo
                 )
 
                 # Classify and route video based on size
@@ -150,6 +157,10 @@ async def main():
             # enviar el video al chat de destino sin caption
             msg = await event.get_message()
             await client.send_message(Config.DESTINATION_CHAT_ID, file=msg.document)
+            ## borrar el mensaje original
+            await client.delete_messages(event.chat_id, msg.id)
+            await event.answer('Video enviado al chat de destino!')
+
         elif data == 'delete':
             logger.info(f"User {event.sender_id} requested video deletion")
             msg = await event.get_message()

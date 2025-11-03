@@ -45,13 +45,13 @@ class TelegramMessageRepository(MessageRepository):
             self.logger.error(f"Failed to send message {message.message_id} to {destination_chat_id}: {str(e)}", exc_info=True)
             raise
 
-    async def send_message_with_buttons(self, message: VideoMessage, destination_chat_id: str) -> None:
+    async def send_message_with_buttons(self, message: VideoMessage, destination_chat_id: str, alert_text: str) -> None:
         self.logger.debug(f"Sending message with buttons for video {message.message_id} to {destination_chat_id}")
         try:
             buttons = [
                 [Button.inline('Enviar', 'send'), Button.inline('Borrar', 'delete')]
             ]
-            await self.client.send_message(destination_chat_id, message.caption or 'Video medio', buttons=buttons, file=message.document)
+            await self.client.send_message(destination_chat_id, message.caption or alert_text, buttons=buttons, file=message.document)
             self.logger.info(f"Message with buttons sent successfully for video {message.message_id} to {destination_chat_id}")
         except Exception as e:
             self.logger.error(f"Failed to send message with buttons for video {message.message_id} to {destination_chat_id}: {str(e)}", exc_info=True)
