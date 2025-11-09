@@ -186,11 +186,11 @@ async def main():
                         caption=msg.text
                     )
                     
-                    # Trim and send the video
-                    await message_repo.trim_and_send_video(video_message, Config.DESTINATION_CHAT_ID, 10)
+                    # Trim and send the video to the ORIGINAL chat (where the video is)
+                    await message_repo.trim_and_send_video(video_message, video_message.chat_id, 10)
                     
                     # Delete the original message with buttons
-                    await client.delete_messages(event.chat_id, msg.id)
+                    # await client.delete_messages(event.chat_id, msg.id)
                     await event.answer('✅ Video recortado enviado!')
                 else:
                     await event.answer('❌ Error: No se pudo procesar el video')
