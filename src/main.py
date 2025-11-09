@@ -2,7 +2,7 @@ import asyncio
 import logging
 from telethon import TelegramClient, events
 from telethon.tl.custom import Button
-from telethon.tl.types import DocumentAttributeFilename
+from telethon.tl.types import DocumentAttributeFilename, DocumentAttributeVideo
 from src.config.config import Config
 from src.domain.entities.video_message import VideoMessage
 from src.infrastructure.telegram.telegram_message_repository import TelegramMessageRepository
@@ -166,8 +166,42 @@ async def main():
             msg = await event.get_message()
             await client.delete_messages(event.chat_id, msg.id)
             await event.answer('Video borrado!')
+            
+        elif data == 'trim_10s':
+            logger.info(f"User {event.sender_id} requested video trimming to 10 seconds")
+            await event.answer('Procesando video... ⏳')
+            
+            try:
+                msg = await event.get_message()
+                
+                # Create VideoMessage entity from the message
+                video_attr = next((attr for attr in msg.document.attributes if isinstance(attr, DocumentAttributeVideo)), None)
+                if video_attr:
+                    video_message = VideoMessage(
+                        message_id=msg.id,
+                        chat_id=msg.chat_id,
+                        video_duration=video_attr.duration,
+                        video_size=msg.document.size,
+                        document=msg.document,
+                        caption=msg.text
+                    )
+                    
+                    # Trim and send the video
+                    await message_repo.trim_and_send_video(video_message, Config.DESTINATION_CHAT_ID, 10)
+                    
+                    # Delete the original message with buttons
+                    await client.delete_messages(event.chat_id, msg.id)
+                    await event.answer('✅ Video recortado enviado!')
+                else:
+                    await event.answer('❌ Error: No se pudo procesar el video')
+                    logger.error("No video attributes found in document")
+                    
+            except Exception as e:
+                logger.error(f"Error trimming video: {str(e)}", exc_info=True)
+                await event.answer('❌ Error al procesar el video')
         else:
             logger.warning(f"Unknown callback data '{data}' from user {event.sender_id}")
+            await event.answer('❌ Acción no reconocida')
 
     logger.info("All event handlers configured. Bot is ready to receive messages.")
     logger.info("Starting message polling...")

@@ -30,3 +30,7 @@ class MessageRepository(ABC):
     @abstractmethod
     async def send_reply(self, chat_id: int, text: str, reply_to_message_id: int) -> None:
         pass
+
+    @abstractmethod
+    async def trim_and_send_video(self, message: VideoMessage, destination_chat_id: str, trim_duration: int = 10) -> None:
+        pass
