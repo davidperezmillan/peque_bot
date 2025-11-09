@@ -16,6 +16,10 @@ class MessageRepository(ABC):
         pass
 
     @abstractmethod
+    async def send_medium_video_with_buttons(self, message: VideoMessage, destination_chat_id: str, alert_text: str) -> None:
+        pass
+
+    @abstractmethod
     async def delete_message(self, message: VideoMessage) -> None:
         pass
 
