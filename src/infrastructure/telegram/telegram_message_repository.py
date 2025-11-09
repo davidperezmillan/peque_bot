@@ -52,13 +52,25 @@ class TelegramMessageRepository(MessageRepository):
         self.logger.debug(f"Sending message with buttons for video {message.message_id} to {destination_chat_id}")
         try:
             buttons = [
-                [Button.inline('Enviar', 'send'), Button.inline('Borrar', 'delete')],
-                [Button.inline('✂️ Recortar 10s', 'trim_10s')]
+                [Button.inline('Enviar', 'send'), Button.inline('Borrar', 'delete')]
             ]
             await self.client.send_message(destination_chat_id, message.caption or alert_text, buttons=buttons, file=message.document)
             self.logger.info(f"Message with buttons sent successfully for video {message.message_id} to {destination_chat_id}")
         except Exception as e:
             self.logger.error(f"Failed to send message with buttons for video {message.message_id} to {destination_chat_id}: {str(e)}", exc_info=True)
+            raise
+
+    async def send_medium_video_with_buttons(self, message: VideoMessage, destination_chat_id: str, alert_text: str) -> None:
+        self.logger.debug(f"Sending medium video with buttons for video {message.message_id} to {destination_chat_id}")
+        try:
+            buttons = [
+                [Button.inline('Enviar', 'send'), Button.inline('Borrar', 'delete')],
+                [Button.inline('✂️ Recortar 10s', 'trim_10s')]
+            ]
+            await self.client.send_message(destination_chat_id, message.caption or alert_text, buttons=buttons, file=message.document)
+            self.logger.info(f"Medium video message with buttons sent successfully for video {message.message_id} to {destination_chat_id}")
+        except Exception as e:
+            self.logger.error(f"Failed to send medium video message with buttons for video {message.message_id} to {destination_chat_id}: {str(e)}", exc_info=True)
             raise
 
     async def delete_message(self, message: VideoMessage) -> None:
