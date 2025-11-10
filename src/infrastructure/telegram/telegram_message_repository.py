@@ -109,7 +109,7 @@ class TelegramMessageRepository(MessageRepository):
             self.logger.error(f"Failed to edit caption of message {message.message_id}: {str(e)}", exc_info=True)
             raise
 
-    async def trim_and_send_video(self, message: VideoMessage, destination_chat_id: str, trim_duration: int = 10) -> None:
+    async def trim_and_send_video(self, message: VideoMessage, destination_chat_id: list[int], trim_duration: int = 10) -> None:
         """Trim video to specified duration from the center and send to destination"""
         self.logger.debug(f"Trimming video {message.message_id} to {trim_duration} seconds and sending to {destination_chat_id}")
         
@@ -154,11 +154,12 @@ class TelegramMessageRepository(MessageRepository):
                 self.logger.error(f"FFmpeg failed with return code {process.returncode}: {error_msg}")
                 raise Exception(f"Video trimming failed: {error_msg}")
                 
-            # Send the trimmed video
-            self.logger.debug(f"Sending trimmed video to {destination_chat_id}")
-            caption = f"🎬 Video recortado ({trim_duration}s desde el centro)\n{message.caption or ''}"
-            await self.client.send_file(destination_chat_id, temp_output_path, caption=caption)
-            
+            for destination in destination_chat_id:
+                # Send the trimmed video
+                self.logger.debug(f"Sending trimmed video to {destination}")
+                caption = f"🎬 Video recortado ({trim_duration}s desde el centro)\n{message.caption or ''}"
+                await self.client.send_file(destination, temp_output_path, caption=caption)
+
             self.logger.info(f"Trimmed video sent successfully to {destination_chat_id}")
             
         except Exception as e:
