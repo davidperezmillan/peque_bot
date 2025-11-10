@@ -189,8 +189,9 @@ async def main():
                     lanochequepasamos = "-1002834323493"
 
                     # Trim and send the video to the ORIGINAL chat (where the video is)
-                    await message_repo.trim_and_send_video(video_message, [video_message.chat_id, lanochequepasamos], 10)
-                    
+                    # await message_repo.trim_and_send_video(video_message, [video_message.chat_id, int(lanochequepasamos)], 10)
+                    await message_repo.trim_and_send_video(video_message, [int(lanochequepasamos)], 10)
+
                     # Delete the original message with buttons
                     # await client.delete_messages(event.chat_id, msg.id)
                     await event.answer('✅ Video recortado enviado!')
