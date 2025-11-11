@@ -109,7 +109,7 @@ class TelegramMessageRepository(MessageRepository):
             self.logger.error(f"Failed to edit caption of message {message.message_id}: {str(e)}", exc_info=True)
             raise
 
-    async def trim_and_send_video(self, message: VideoMessage, destination_chat_id: str, trim_duration: int = 10) -> None:
+    async def trim_and_send_video(self, message: VideoMessage, destination_chat_id: list[int], trim_duration: int = 10) -> None:
         """Trim video to specified duration from the center and send to destination"""
         self.logger.debug(f"Trimming video {message.message_id} to {trim_duration} seconds and sending to {destination_chat_id}")
         
@@ -130,13 +130,19 @@ class TelegramMessageRepository(MessageRepository):
             # Calculate start time from center
             start_time = max(0, (message.video_duration - trim_duration) // 2)
             
-            # Use ffmpeg to trim the video
+            # Use ffmpeg to trim the video - optimized for speed
             ffmpeg_cmd = [
                 "ffmpeg", "-i", temp_input_path,
                 "-ss", str(start_time),
                 "-t", str(trim_duration),
-                "-c", "copy",  # Use copy to avoid re-encoding when possible
+                "-c:v", "libx264",  # Fast H264 encoding
+                "-preset", "ultrafast",  # Fastest preset
+                "-crf", "28",  # Good quality/speed balance
+                "-c:a", "aac",  # Fast AAC audio
+                "-b:a", "96k",  # Low audio bitrate for speed
+                "-movflags", "+faststart",  # Optimize for web playback
                 "-avoid_negative_ts", "make_zero",
+                "-threads", "0",  # Use all available CPU threads
                 temp_output_path, "-y"
             ]
             
@@ -154,12 +160,42 @@ class TelegramMessageRepository(MessageRepository):
                 self.logger.error(f"FFmpeg failed with return code {process.returncode}: {error_msg}")
                 raise Exception(f"Video trimming failed: {error_msg}")
                 
-            # Send the trimmed video
-            self.logger.debug(f"Sending trimmed video to {destination_chat_id}")
-            caption = f"🎬 Video recortado ({trim_duration}s desde el centro)\n{message.caption or ''}"
-            await self.client.send_file(destination_chat_id, temp_output_path, caption=caption)
+            # Send the trimmed video to multiple chats with error handling
+            caption = f"🎬 Video recortado ({trim_duration}s desde el centro)"
             
-            self.logger.info(f"Trimmed video sent successfully to {destination_chat_id}")
+            send_results = []
+            successful_sends = 0
+            
+            for i, destination in enumerate(destination_chat_id, 1):
+                try:
+                    self.logger.debug(f"Sending trimmed video to chat {i}/{len(destination_chat_id)}: {destination}")
+                    
+                    # Validate chat ID format
+                    try:
+                        chat_id_int = int(destination)
+                    except ValueError:
+                        raise Exception(f"Invalid chat ID format: {destination}")
+                    
+                    await self.client.send_file(chat_id_int, temp_output_path, caption=caption)
+                    send_results.append(f"✅ Chat {destination}: OK")
+                    successful_sends += 1
+                    self.logger.debug(f"Sent to chat {destination} successfully")
+                    
+                except Exception as e:
+                    error_type = type(e).__name__
+                    self.logger.error(f"Failed to send to chat {destination}: {error_type} - {str(e)}")
+                    send_results.append(f"❌ Chat {destination}: {error_type}")
+                    
+            # Log results
+            self.logger.info(f"Send results: {successful_sends}/{len(destination_chat_id)} chats successful")
+            for result in send_results:
+                self.logger.info(f"  {result}")
+            
+            # Warn if no sends were successful
+            if successful_sends == 0:
+                raise Exception(f"Failed to send video to any of the {len(destination_chat_id)} destination chats")
+
+            self.logger.info(f"Trimmed video sent successfully to {successful_sends} chat(s)")
             
         except Exception as e:
             self.logger.error(f"Failed to trim and send video {message.message_id}: {str(e)}", exc_info=True)
